@@ -7,6 +7,16 @@
  * If you wish to use this software under Open Source Licensing, you must contribute all your source code to the community and all text above must be
  * included in any redistribution in accordance with the GPL Version 2 when your application is distributed. See http:// www.gnu.org/copyleft/gpl.html
  *
+ * ADDED Progmem for MOUTHS and GESTURES: Paul Van De Veen October 2018
+ * ADDED PIN definitions for ease of use: Jason Snow November 2018
+ * ADDED Battery meassurementin in mode 3 Jason Snow August 2019
+ * ADDED changed to original Software serial library Camilo Parra May 2020
+ * DELETED interrupts and modes to use BTserial Camilo Parra May 2020
+ * ADDED BLE communication for Scratch AI Jorge Gonzalez August 2020 https://garragames.com/scratch
+ * ADDED LEDs Neo pixel control for fun by Jorge Gonzalez August 2020
+ * ADDED LEDs RF 433Mhz to control remote 4 Relay module by Jorge Gonzalez November 2020
+ *
+ *
  *
  *                     GarraBot Biped                                          GarraBot Humanoid  
  *                     ╭─────────╮                                           ╭─────────╮
@@ -31,7 +41,7 @@
 #define RADIO_FREQUENCY    // Uncomment this line to include code to legs servos
 //    #define RADIO_HEAD     // Uncomment this line if using RadioHead library
 //    #define VIRTUAL_WIRE   // Uncomment this line if using VirtualWire library
-    #define RC_SWITCH      // Uncomment this line if using rc-switch library
+#define RC_SWITCH      // Uncomment this line if using rc-switch library
 //    #define RF_TRANSMITTER // Uncomment this line if using RFTransmitter
 #define EYES_MATRIX        // Uncomment this line to include code to 16x8 LED matrix
 //#define MOUTH_MATRIX       // Uncomment this line to include code to 8x8 LED matrix
@@ -48,25 +58,30 @@
 #include <string.h>
 #include <SerialCommand.h> // Library to manage serial commands
 #include <GarraBot.h>
+
 #ifdef EYES_MATRIX
-    #include "Adafruit_LEDBackpack.h"
+
+#include "Adafruit_LEDBackpack.h"
+
 #endif
 #ifdef RADIO_FREQUENCY
-    #ifdef RF_TRANSMITTER
-        #include <RFTransmitter.h>
-    #endif
-    #ifdef RADIO_HEAD
-        #include <RH_ASK.h>
-        #ifdef RH_HAVE_HARDWARE_SPI
-            #include <SPI.h> // Not actually used but needed to compile
-        #endif
-    #endif
-    #ifdef VIRTUAL_WIRE
-        #include <VirtualWire.h>
-    #endif
-    #ifdef RC_SWITCH
-        #include <RCSwitch.h>
-    #endif
+#ifdef RF_TRANSMITTER
+#include <RFTransmitter.h>
+#endif
+#ifdef RADIO_HEAD
+#include <RH_ASK.h>
+#ifdef RH_HAVE_HARDWARE_SPI
+#include <SPI.h> // Not actually used but needed to compile
+#endif
+#endif
+#ifdef VIRTUAL_WIRE
+#include <VirtualWire.h>
+#endif
+#ifdef RC_SWITCH
+
+#include <RCSwitch.h>
+
+#endif
 #endif
 
 GarraBot GarraBot;  // This is GarraBot!
@@ -149,7 +164,7 @@ GarraBot GarraBot;  // This is GarraBot!
 SoftwareSerial BTserial = SoftwareSerial(PIN_BLE_TX, PIN_BLE_RX); //  TX  RX of the Bluetooth
 SerialCommand SCmd(BTserial);  // The SerialCommand object
 
-const char programID[] = "GarraBotScratchAI-v1"; // Each program will have a ID
+const char programID[] = "GarraBot-v1"; // Each program will have a ID
 const char factory_name = '$'; // Factory name
 const char first_name = '#'; // First name
 
@@ -157,22 +172,22 @@ const char first_name = '#'; // First name
  * Eyes LED Matrix
  */
 #ifdef EYES_MATRIX
-    Adafruit_8x16matrix eyesMatrix = Adafruit_8x16matrix();
+Adafruit_8x16matrix eyesMatrix = Adafruit_8x16matrix();
 #endif
 
 /**
  * RF 433Mhz Module
  */
 #ifdef RADIO_FREQUENCY
-    #ifdef RF_TRANSMITTER
-        RFTransmitter transmitter(PIN_RF_TX, 1);
-    #endif
-    #ifdef RADIO_HEAD
-        RH_ASK driver(RF_SPEED, PIN_RF_RX, PIN_RF_TX, 0);
-    #endif
-    #ifdef RC_SWITCH
-        RCSwitch rcSwitch = RCSwitch();
-    #endif
+#ifdef RF_TRANSMITTER
+RFTransmitter transmitter(PIN_RF_TX, 1);
+#endif
+#ifdef RADIO_HEAD
+RH_ASK driver(RF_SPEED, PIN_RF_RX, PIN_RF_TX, 0);
+#endif
+#ifdef RC_SWITCH
+RCSwitch rcSwitch = RCSwitch();
+#endif
 #endif
 
 /**
@@ -248,8 +263,9 @@ void setup() {
     pinMode(PIN_BLE_STATE, INPUT);
 
     // GarraBot initialization
-    GarraBot.init(PIN_LEG_LEFT, PIN_LEG_RIGHT, PIN_FOOT_LEFT, PIN_FOOT_RIGHT, true, PIN_NOISE, PIN_BUZZER, PIN_US_TRIGGER,
-              PIN_US_ECHO); // Set the servo pins and ultrasonic pins
+    GarraBot.init(PIN_LEG_LEFT, PIN_LEG_RIGHT, PIN_FOOT_LEFT, PIN_FOOT_RIGHT, true, PIN_NOISE, PIN_BUZZER,
+                  PIN_US_TRIGGER,
+                  PIN_US_ECHO); // Set the servo pins and ultrasonic pins
 
     // Mouth LED Matrix initialization
 #ifdef MOUTH_MATRIX
@@ -275,23 +291,23 @@ void setup() {
 
     // RF 433Mhx Module initialization
 #ifdef RADIO_FREQUENCY
-    #ifdef VIRTUAL_WIRE
-        vw_set_tx_pin(PIN_RF_TX);
-        vw_set_rx_pin(PIN_RF_RX);
-        vw_setup(RF_SPEED);	 // Bits per sec
-        if (!driver.init())
-            Serial.println("init failed");
-    #endif
-    #ifdef RC_SWITCH
-        // Transmitter is connected to Arduino Pin #10  
-        rcSwitch.enableTransmit(PIN_RF_TX);
-        // Optional set protocol (default is 1, will work for most outlets)
-        rcSwitch.setProtocol(1);
-        // Optional set pulse length.
-        //rcSwitch.setPulseLength(350);  // Default 350 us
-        // Optional set number of transmission repetitions.
-        //rcSwitch.setRepeatTransmit(4); // Default 4
-    #endif
+#ifdef VIRTUAL_WIRE
+    vw_set_tx_pin(PIN_RF_TX);
+    vw_set_rx_pin(PIN_RF_RX);
+    vw_setup(RF_SPEED);	 // Bits per sec
+    if (!driver.init())
+        Serial.println("init failed");
+#endif
+#ifdef RC_SWITCH
+    // Transmitter is connected to Arduino Pin #10
+    rcSwitch.enableTransmit(PIN_RF_TX);
+    // Optional set protocol (default is 1, will work for most outlets)
+    rcSwitch.setProtocol(1);
+    // Optional set pulse length.
+    //rcSwitch.setPulseLength(350);  // Default 350 us
+    // Optional set number of transmission repetitions.
+    //rcSwitch.setRepeatTransmit(4); // Default 4
+#endif
 #endif
 
 
@@ -369,12 +385,12 @@ void setup() {
     eyesMatrix.setTextWrap(false);  // we dont want text to wrap so it scrolls nicely
     eyesMatrix.setTextColor(LED_ON);
     eyesMatrix.setRotation(1);
-    for (int8_t x=7; x>=-90; x--) {
-      eyesMatrix.clear();
-      eyesMatrix.setCursor(x,0);
-      eyesMatrix.print("GarraBot");
-      eyesMatrix.writeDisplay();
-      delay(50);
+    for (int8_t x = 7; x >= -90; x--) {
+        eyesMatrix.clear();
+        eyesMatrix.setCursor(x, 0);
+        eyesMatrix.print("GarraBot");
+        eyesMatrix.writeDisplay();
+        delay(50);
     }
     eyesMatrix.setRotation(0);
 
@@ -501,7 +517,7 @@ void receiveText() {
     // X|GarraBot Scratch AI
     char *arg;
     arg = SCmd.next();
-    uint8_t  msgLength = strlen(arg) * 6;
+    uint8_t msgLength = strlen(arg) * 6;
     Serial.print("msgLenght: ");
     Serial.println(msgLength);
 
@@ -530,18 +546,18 @@ void receiveText() {
         char subbuff[17];
         int i = 0;
         do {
-           memcpy( subbuff, &arg[i], 17);
-           subbuff[16] = '\0';
+            memcpy(subbuff, &arg[i], 17);
+            subbuff[16] = '\0';
 
-           for (int8_t x=0; x>=-4; x--) {
-             eyesMatrix.clear();
-             eyesMatrix.setCursor(x,0);
-             eyesMatrix.print(subbuff);
-             eyesMatrix.writeDisplay();
-             delay(50);
-           }
+            for (int8_t x = 0; x >= -4; x--) {
+                eyesMatrix.clear();
+                eyesMatrix.setCursor(x, 0);
+                eyesMatrix.print(subbuff);
+                eyesMatrix.writeDisplay();
+                delay(50);
+            }
         } while (arg[i++] != '\0');
-           eyesMatrix.setRotation(0);
+        eyesMatrix.setRotation(0);
     } else {
         //GarraBot.
         delay(2000);
@@ -940,49 +956,49 @@ void receiveGesture() {
             break;
     }
 #else
-        switch (gesture) {
-            case 1: // H 1
-                GarraBot.playGesture(GarraBotHappy);
-                break;
-            case 2: // H 2
-                GarraBot.playGesture(GarraBotSuperHappy);
-                break;
-            case 3: // H 3
-                GarraBot.playGesture(GarraBotSad);
-                break;
-            case 4: // H 4
-                GarraBot.playGesture(GarraBotSleeping);
-                break;
-            case 5: // H 5
-                GarraBot.playGesture(GarraBotFart);
-                break;
-            case 6: // H 6
-                GarraBot.playGesture(GarraBotConfused);
-                break;
-            case 7: // H 7
-                GarraBot.playGesture(GarraBotLove);
-                break;
-            case 8: // H 8
-                GarraBot.playGesture(GarraBotAngry);
-                break;
-            case 9: // H 9
-                GarraBot.playGesture(GarraBotFretful);
-                break;
-            case 10: // H 10
-                GarraBot.playGesture(GarraBotMagic);
-                break;
-            case 11: // H 11
-                GarraBot.playGesture(GarraBotWave);
-                break;
-            case 12: // H 12
-                GarraBot.playGesture(GarraBotVictory);
-                break;
-            case 13: // H 13
-                GarraBot.playGesture(GarraBotFail);
-                break;
-            default:
-                break;
-        }
+    switch (gesture) {
+        case 1: // H 1
+            GarraBot.playGesture(GarraBotHappy);
+            break;
+        case 2: // H 2
+            GarraBot.playGesture(GarraBotSuperHappy);
+            break;
+        case 3: // H 3
+            GarraBot.playGesture(GarraBotSad);
+            break;
+        case 4: // H 4
+            GarraBot.playGesture(GarraBotSleeping);
+            break;
+        case 5: // H 5
+            GarraBot.playGesture(GarraBotFart);
+            break;
+        case 6: // H 6
+            GarraBot.playGesture(GarraBotConfused);
+            break;
+        case 7: // H 7
+            GarraBot.playGesture(GarraBotLove);
+            break;
+        case 8: // H 8
+            GarraBot.playGesture(GarraBotAngry);
+            break;
+        case 9: // H 9
+            GarraBot.playGesture(GarraBotFretful);
+            break;
+        case 10: // H 10
+            GarraBot.playGesture(GarraBotMagic);
+            break;
+        case 11: // H 11
+            GarraBot.playGesture(GarraBotWave);
+            break;
+        case 12: // H 12
+            GarraBot.playGesture(GarraBotVictory);
+            break;
+        case 13: // H 13
+            GarraBot.playGesture(GarraBotFail);
+            break;
+        default:
+            break;
+    }
 #endif
     sendFinalAck();
     BTserial.println("H:ACK");
@@ -1143,13 +1159,13 @@ void receiveRelay() {
     arg = SCmd.next(); // Relay Number
     if (arg != NULL) relayNumber = atoi(arg);
     else {
-    #ifdef MOUTH_MATRIX
+#ifdef MOUTH_MATRIX
         GarraBot.putMouth(xMouth);
-    #endif
+#endif
         delay(2000);
-    #ifdef MOUTH_MATRIX
+#ifdef MOUTH_MATRIX
         GarraBot.clearMouth();
-    #endif
+#endif
         moveID = 0; // stop
     }
 
@@ -1168,39 +1184,39 @@ void receiveRelay() {
     msg[2] = relayNumber + '0';
     msg[4] = onoff + '0';
 
-    #ifdef RF_TRANSMITTER
-        int i;
-        for (i = 0; i < 5; i++) {
-            transmitter.send((byte *)msg, strlen(msg) + 1);
-            delay(300);
-        }
-    #endif
+#ifdef RF_TRANSMITTER
+    int i;
+    for (i = 0; i < 5; i++) {
+        transmitter.send((byte *)msg, strlen(msg) + 1);
+        delay(300);
+    }
+#endif
 
-    #ifdef VIRTUAL_WIRE
-        vw_send((uint8_t *)msg, 7);
-        vw_wait_tx(); // Wait until the whole message is gone
-        delay(3000);
-    #endif
+#ifdef VIRTUAL_WIRE
+    vw_send((uint8_t *)msg, 7);
+    vw_wait_tx(); // Wait until the whole message is gone
+    delay(3000);
+#endif
 
-    #ifdef RADIO_HEAD
-        driver.send((uint8_t *)msg, strlen(msg));
-        driver.waitPacketSent();
-    #endif
-    #ifdef RC_SWITCH
-        Serial.println("Sending Message...");
-        /**
-         * Switch a remote switch on/off (Type B with two rotary/sliding switches)
-         *
-         * @param nAddressCode  Number of the switch group (1..4)
-         * @param nChannelCode  Number of the switch itself (1..4)
-         */
-        onoff = 1;
-        if (onoff == 1) {
-            rcSwitch.switchOn(1, relayNumber);                    
-        } else {
-            rcSwitch.switchOff(1, relayNumber);                    
-        }
-    #endif
+#ifdef RADIO_HEAD
+    driver.send((uint8_t *)msg, strlen(msg));
+    driver.waitPacketSent();
+#endif
+#ifdef RC_SWITCH
+    Serial.println("Sending Message...");
+    /**
+     * Switch a remote switch on/off (Type B with two rotary/sliding switches)
+     *
+     * @param nAddressCode  Number of the switch group (1..4)
+     * @param nChannelCode  Number of the switch itself (1..4)
+     */
+    onoff = 1;
+    if (onoff == 1) {
+        rcSwitch.switchOn(1, relayNumber);
+    } else {
+        rcSwitch.switchOff(1, relayNumber);
+    }
+#endif
 
     BTserial.println("OK RF");
 
@@ -1361,14 +1377,14 @@ void checkIfTouched() {
 #ifdef TOUCH_SENSOR
     currentTouchState = digitalRead(PIN_BUTTON);
     if (lastTouchState == LOW && currentTouchState == HIGH) {
-    #ifdef EYES_MATRIX
+#ifdef EYES_MATRIX
         eyesMatrix.clear(); eyesMatrix.drawBitmap(0, 0, + touch_bmp , 8, 16, LED_ON);  eyesMatrix.writeDisplay();
-    #endif
+#endif
         //GarraBot.sing(S_buttonPushed);
         delay(500);
-    #ifdef EYES_MATRIX
+#ifdef EYES_MATRIX
         eyesMatrix.clear(); eyesMatrix.drawBitmap(0, 0, + eyes_bmp , 8, 16, LED_ON);  eyesMatrix.writeDisplay();
-    #endif
+#endif
         BTserial.println(F("T:ACK"));
     }
     lastTouchState = currentTouchState;
@@ -1424,7 +1440,7 @@ void hex2dec(char *hex, uint8_t *image_bmp) {
     uint8_t dec;
     int i = 0;
     int j = 0;
-    for (i = 0 ; i < 32; i = i + 4) {
+    for (i = 0; i < 32; i = i + 4) {
         sub[0] = hex[i];
         sub[1] = hex[i + 1];
         sub[2] = '\0';
@@ -1432,7 +1448,7 @@ void hex2dec(char *hex, uint8_t *image_bmp) {
         image_bmp[j++] = dec;
         printf("Number: %s -  %d\n", sub, dec);
     };
-    for (i = 2 ; i < 32; i = i + 4) {
+    for (i = 2; i < 32; i = i + 4) {
         sub[0] = hex[i];
         sub[1] = hex[i + 1];
         sub[2] = '\0';
