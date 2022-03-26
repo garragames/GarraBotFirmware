@@ -258,7 +258,7 @@ void setup() {
     // Serial communication initialization
     Serial.begin(9600);
 
-    // Bluetooth communication initialization
+    // Bluetooth's communication initialization
     BTserial.begin(9600);
     pinMode(PIN_BLE_STATE, INPUT);
 
